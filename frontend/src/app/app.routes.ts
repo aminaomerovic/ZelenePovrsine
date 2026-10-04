@@ -41,6 +41,12 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(['Nadzornik', 'Administrator'])]
   },
   
+{
+  path: 'zelene-povrsine/:id/izmeni',
+  component: FormaZelenaPovrsinaComponent,
+  canActivate: [authGuard, roleGuard(['Nadzornik', 'Administrator'])]
+},
+
   { path: 'mapa', component: MapaZelenihPovrsinaComponent, canActivate: [authGuard] },
   { path: 'zelene-povrsine/:id', component: DetaljiZelenaPovrsinaComponent, canActivate: [authGuard] },
 

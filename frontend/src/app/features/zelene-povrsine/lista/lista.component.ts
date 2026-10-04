@@ -26,6 +26,14 @@ import { AuthService } from '../../../core/services/auth.service';
           @if (povrsina.opis) {
             <p style="color:#666;">{{ povrsina.opis }}</p>
           }
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            @if (auth.imaUlogu('Nadzornik', 'Administrator')) {
+              <a class="btn" [routerLink]="['/zelene-povrsine', povrsina.id, 'izmeni']">Izmeni</a>
+            }
+            @if (auth.imaUlogu('Administrator')) {
+              <button class="btn" (click)="obrisi(povrsina.id)">Obriši</button>
+            }
+          </div>
         </div>
       } @empty {
         <p>Nema unetih zelenih površina.</p>
@@ -44,6 +52,11 @@ export class ListaZelenihPovrsinaComponent implements OnInit {
 
   ucitaj() {
     this.servis.getSve().subscribe((podaci) => this.povrsine = podaci);
+  }
+
+  obrisi(id: number) {
+    if (!confirm('Da li si sigurna da želiš da obrišeš ovu zelenu površinu?')) return;
+    this.servis.obrisi(id).subscribe(() => this.ucitaj());
   }
 
   bojaStatusa(status: string): string {

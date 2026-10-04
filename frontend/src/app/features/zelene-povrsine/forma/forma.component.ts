@@ -1,12 +1,14 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import * as L from 'leaflet';
 import { ZelenePovrsineService } from '../../../core/services/zelene-povrsine.service';
 import { KvartService } from '../../../core/services/kvart.service';
 import { TipZelenePovrsine } from '../../../core/models/zelena-povrsina.model';
 import { Kvart } from '../../../core/models/kvart.model';
+
+type StatusZelenePovrsine = 'Uredno' | 'PotrebnoKosenje' | 'PotrebnoOrezivanje' | 'PotrebnaPopravkaMobilijara';
 
 @Component({
   selector: 'app-forma-zelena-povrsina',
@@ -15,7 +17,7 @@ import { Kvart } from '../../../core/models/kvart.model';
   template: `
     <div class="container" style="max-width: 600px;">
       <div class="card">
-        <h2>Nova zelena površina</h2>
+        <h2>{{ idZaIzmenu ? 'Izmeni zelenu površinu' : 'Nova zelena površina' }}</h2>
 
         <label>Naziv</label>
         <input [(ngModel)]="naziv" name="naziv">
@@ -28,6 +30,19 @@ import { Kvart } from '../../../core/models/kvart.model';
           <option value="CvetnaLeja">Cvetna leja</option>
           <option value="DecjeIgraliste">Dečje igralište</option>
         </select>
+
+        @if (idZaIzmenu) {
+          <label>Status</label>
+          <select [(ngModel)]="status" name="status">
+            <option value="Uredno">Uredno</option>
+            <option value="PotrebnoKosenje">Potrebno košenje</option>
+            <option value="PotrebnoOrezivanje">Potrebno orezivanje</option>
+            <option value="PotrebnaPopravkaMobilijara">Potrebna popravka mobilijara</option>
+          </select>
+
+          <label>Poslednje održavanje</label>
+          <input type="date" [(ngModel)]="poslednjeOdrzavanje" name="poslednjeOdrzavanje">
+        }
 
         <label>Kvart</label>
         <select [(ngModel)]="kvartId" name="kvartId">
@@ -61,6 +76,8 @@ import { Kvart } from '../../../core/models/kvart.model';
 export class FormaZelenaPovrsinaComponent implements OnInit, AfterViewInit {
   naziv = '';
   tip: TipZelenePovrsine = 'Park';
+  status: StatusZelenePovrsine = 'Uredno';
+  poslednjeOdrzavanje?: string;
   adresa = '';
   grad = '';
   povrsina = 0;
@@ -68,7 +85,8 @@ export class FormaZelenaPovrsinaComponent implements OnInit, AfterViewInit {
   kvartId?: number;
   kvartovi: Kvart[] = [];
 
-  // pocetne koordinate - centar Novog Pazara, korisnik klikom menja
+  idZaIzmenu?: number;
+
   lat = 43.1367;
   lng = 20.5122;
 
@@ -78,12 +96,35 @@ export class FormaZelenaPovrsinaComponent implements OnInit, AfterViewInit {
   constructor(
     private servis: ZelenePovrsineService,
     private kvartServis: KvartService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit() {
-    // ucitavanje kvartova za padajuci meni
     this.kvartServis.getSve().subscribe((k) => (this.kvartovi = k));
+
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (idParam) {
+      this.idZaIzmenu = Number(idParam);
+      this.servis.getJedna(this.idZaIzmenu).subscribe((zp: any) => {
+        this.naziv = zp.naziv;
+        this.tip = zp.tip as TipZelenePovrsine;
+        this.status = zp.status as StatusZelenePovrsine;
+        this.poslednjeOdrzavanje = zp.poslednjeOdrzavanje ? zp.poslednjeOdrzavanje.substring(0, 10) : undefined;
+        this.adresa = zp.adresa;
+        this.grad = zp.grad;
+        this.povrsina = zp.povrsina;
+        this.opis = zp.opis ?? '';
+        this.kvartId = zp.kvartId;
+        this.lat = zp.koordinateLat;
+        this.lng = zp.koordinateLng;
+
+        if (this.mapa) {
+          this.mapa.setView([this.lat, this.lng], 13);
+          this.marker.setLatLng([this.lat, this.lng]);
+        }
+      });
+    }
   }
 
   ngAfterViewInit() {
@@ -95,7 +136,6 @@ export class FormaZelenaPovrsinaComponent implements OnInit, AfterViewInit {
 
     this.marker = L.marker([this.lat, this.lng]).addTo(this.mapa);
 
-    // klik na mapu pomera marker i cuva koordinate
     this.mapa.on('click', (e: L.LeafletMouseEvent) => {
       this.lat = e.latlng.lat;
       this.lng = e.latlng.lng;
@@ -104,16 +144,32 @@ export class FormaZelenaPovrsinaComponent implements OnInit, AfterViewInit {
   }
 
   sacuvaj() {
-    this.servis.kreiraj({
-      naziv: this.naziv,
-      tip: this.tip,
-      adresa: this.adresa,
-      grad: this.grad,
-      povrsina: this.povrsina,
-      opis: this.opis,
-      koordinateLat: this.lat,
-      koordinateLng: this.lng,
-      kvartId: this.kvartId
-    }).subscribe(() => this.router.navigate(['/zelene-povrsine']));
+    if (this.idZaIzmenu) {
+      this.servis.izmeni(this.idZaIzmenu, {
+        naziv: this.naziv,
+        tip: this.tip,
+        status: this.status,
+        poslednjeOdrzavanje: this.poslednjeOdrzavanje ? new Date(this.poslednjeOdrzavanje) : undefined,
+        adresa: this.adresa,
+        grad: this.grad,
+        povrsina: this.povrsina,
+        opis: this.opis,
+        koordinateLat: this.lat,
+        koordinateLng: this.lng,
+        kvartId: this.kvartId
+      } as any).subscribe(() => this.router.navigate(['/zelene-povrsine']));
+    } else {
+      this.servis.kreiraj({
+        naziv: this.naziv,
+        tip: this.tip,
+        adresa: this.adresa,
+        grad: this.grad,
+        povrsina: this.povrsina,
+        opis: this.opis,
+        koordinateLat: this.lat,
+        koordinateLng: this.lng,
+        kvartId: this.kvartId
+      }).subscribe(() => this.router.navigate(['/zelene-povrsine']));
+    }
   }
 }
