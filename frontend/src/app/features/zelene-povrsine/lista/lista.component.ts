@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ZelenePovrsineService } from '../../../core/services/zelene-povrsine.service';
 import { ZelenaPovrsina } from '../../../core/models/zelena-povrsina.model';
@@ -8,7 +9,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-lista-zelenih-povrsina',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   template: `
     <div class="container">
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -18,7 +19,12 @@ import { AuthService } from '../../../core/services/auth.service';
         }
       </div>
 
-      @for (povrsina of povrsine; track povrsina.id) {
+      <label style="display:flex; align-items:center; gap:6px; margin:8px 0 16px;">
+        <input type="checkbox" [(ngModel)]="samoSaPrijavama">
+        Prikaži samo površine sa nerešenim prijavama
+      </label>
+
+      @for (povrsina of prikazanePovrsine; track povrsina.id) {
         <div class="card">
           <h3><a [routerLink]="['/zelene-povrsine', povrsina.id]" style="color:inherit;">{{ povrsina.naziv }}</a> <span class="badge" [class]="bojaStatusa(povrsina.status)">{{ povrsina.status }}</span></h3>
           <p>{{ povrsina.tip }} — {{ povrsina.adresa }}, {{ povrsina.grad }}</p>
@@ -36,13 +42,19 @@ import { AuthService } from '../../../core/services/auth.service';
           </div>
         </div>
       } @empty {
-        <p>Nema unetih zelenih površina.</p>
+        @if (samoSaPrijavama) {
+          <p>Nema zelenih površina sa nerešenim prijavama.</p>
+        } @else {
+          <p>Nema unetih zelenih površina.</p>
+        }
       }
     </div>
   `
 })
 export class ListaZelenihPovrsinaComponent implements OnInit {
   povrsine: ZelenaPovrsina[] = [];
+  idSaPrijavama = new Set<number>();
+  samoSaPrijavama = false;
 
   constructor(private servis: ZelenePovrsineService, public auth: AuthService) {}
 
@@ -52,6 +64,13 @@ export class ListaZelenihPovrsinaComponent implements OnInit {
 
   ucitaj() {
     this.servis.getSve().subscribe((podaci) => this.povrsine = podaci);
+    this.servis.getIdSaAktivnimPrijavama().subscribe((idevi) => this.idSaPrijavama = new Set(idevi));
+  }
+
+  // ako je cekirano, prikazuju se samo povrsine sa nerešenim prijavama
+  get prikazanePovrsine(): ZelenaPovrsina[] {
+    if (!this.samoSaPrijavama) return this.povrsine;
+    return this.povrsine.filter((p) => this.idSaPrijavama.has(p.id));
   }
 
   obrisi(id: number) {

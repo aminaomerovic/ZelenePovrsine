@@ -34,6 +34,17 @@ namespace ZelenePovrsineAPI.Controllers
             return Ok(povrsine);
         }
 
+        // vraca id-jeve zelenih povrsina koje imaju bar jednu neresenu prijavu
+        [HttpGet("sa-aktivnim-prijavama")]
+        public async Task<ActionResult<IEnumerable<int>>> GetSaAktivnimPrijavama()
+        {
+            return await _context.PrijaveProblema
+                .Where(p => p.Status != StatusPrijave.Reseno)
+                .Select(p => p.ZelenaPovrsinaId)
+                .Distinct()
+                .ToListAsync();
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<ZelenaPovrsina>> GetJedna(int id)
         {

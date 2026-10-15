@@ -54,7 +54,7 @@ export class SvePrijaveComponent implements OnInit {
     this.servis.izmeniStatus(prijava.id, status).subscribe(() => this.ucitaj());
   }
 
-  // prebacuje na formu za kreiranje radnog naloga, sa vec popunjenom prijavom
+  // prebacuje na formu za kreiranje radnog nnaloga sa vec popunjenom prijavom 
   napraviNalog(prijava: PrijavaProblema) {
     this.router.navigate(['/radni-nalozi/novi'], { queryParams: { prijavaId: prijava.id, povrsinaId: prijava.zelenaPovrsinaId } });
   }
