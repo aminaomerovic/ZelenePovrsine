@@ -5,6 +5,13 @@ using ZelenePovrsineAPI.Data;
 using ZelenePovrsineAPI.DTOs;
 using ZelenePovrsineAPI.Models;
 
+
+//da se na stranici zelene povrsine, check in box da kad se pritisne pokazu se zelene povrsine koje imaju neku prijavu trenutnu neresenu
+//da se filtrira prikaz
+//i na mapi zelenih povrsina one kvacice sto su plave koje prikazuju zelene povrsine koje imamo da postanu crvene za zelenu povrsinu koja ima neku 
+// prijavu koja je trenutna neresena
+
+
 namespace ZelenePovrsineAPI.Controllers
 {
     [ApiController]
@@ -34,7 +41,7 @@ namespace ZelenePovrsineAPI.Controllers
             return Ok(povrsine);
         }
 
-        // vraca id-jeve zelenih povrsina koje imaju bar jednu neresenu prijavu
+        
         [HttpGet("sa-aktivnim-prijavama")]
         public async Task<ActionResult<IEnumerable<int>>> GetSaAktivnimPrijavama()
         {
