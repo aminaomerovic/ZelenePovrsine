@@ -64,7 +64,10 @@ export class ListaZelenihPovrsinaComponent implements OnInit {
 
   ucitaj() {
     this.servis.getSve().subscribe((podaci) => this.povrsine = podaci);
-    this.servis.getIdSaAktivnimPrijavama().subscribe((idevi) => this.idSaPrijavama = new Set(idevi));
+    this.servis.getIdSaAktivnimPrijavama().subscribe({
+      next: (idevi) => this.idSaPrijavama = new Set(idevi),
+      error: (greska) => console.error('Greška pri učitavanju površina sa prijavama', greska)
+    });
   }
 
   // ako je cekirano, prikazuju se samo povrsine sa nerešenim prijavama

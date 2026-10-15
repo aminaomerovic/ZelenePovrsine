@@ -1,6 +1,6 @@
 import { Component, AfterViewInit } from '@angular/core';
 import * as L from 'leaflet';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import { ZelenePovrsineService } from '../../../core/services/zelene-povrsine.service';
 
 // crveni marker za povrsine sa nerešenim prijavama (iste dimenzije kao podrazumevani plavi)
@@ -39,10 +39,16 @@ export class MapaZelenihPovrsinaComponent implements AfterViewInit {
     }).addTo(this.mapa);
 
     // ucitavanje povrsina i dodavanje markera
-    // povrsine sa nerešenim prijavama dobijaju crveni marker
+    // prijave crveni marker
     forkJoin({
       povrsine: this.servis.getSve(),
-      idSaPrijavama: this.servis.getIdSaAktivnimPrijavama()
+      // ako ruta za prijave ne radi, i dalje prikazujemo sve povrsine (plave)
+      idSaPrijavama: this.servis.getIdSaAktivnimPrijavama().pipe(
+        catchError((greska) => {
+          console.error('Greška pri učitavanju površina sa prijavama', greska);
+          return of([] as number[]);
+        })
+      )
     }).subscribe(({ povrsine, idSaPrijavama }) => {
       const saPrijavama = new Set(idSaPrijavama);
       povrsine.forEach((p) => {

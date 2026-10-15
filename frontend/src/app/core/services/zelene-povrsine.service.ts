@@ -18,7 +18,7 @@ export class ZelenePovrsineService {
     return this.http.get<ZelenaPovrsina>(`${this.apiUrl}/${id}`);
   }
 
-  // id-jevi povrsina koje imaju bar jednu neresenu prijavu
+  // id povrsina koje imaju bar jednu neresenu prijavu
   getIdSaAktivnimPrijavama(): Observable<number[]> {
     return this.http.get<number[]>(`${this.apiUrl}/sa-aktivnim-prijavama`);
   }
